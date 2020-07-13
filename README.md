@@ -29,7 +29,8 @@ cd resources/upload
 sls deploy
 ```
 
-Now upload compile and upload the lambdas
+Now upload compile and upload the lambdas 
+but first edit your `services/serverless.yml` and set the parameters for your SMTP server correctly. 
 
 ```bash
 cd services
