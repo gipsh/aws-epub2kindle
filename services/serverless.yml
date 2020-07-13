@@ -1,0 +1,81 @@
+service: epub2kindle-backend
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+frameworkVersion: '>=1.28.0 <2.0.0'
+
+custom:
+  stage: dev
+  bucket: epub-upload-bucket
+  client:
+    bucketName: ${self:custom.bucket}
+  output:
+    file: .build/stack.json # toml, yaml, yml, and json format is available
+
+
+provider:
+  name: aws
+  runtime: go1.x
+  environment:
+    UPLOAD_BUCKET: ${self:custom.bucket}
+  region: us-east-2
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+        - s3:ListBucket
+        - s3:ListBucketVersions
+      Resource: "arn:aws:s3:::${self:custom.bucket}/*"
+    - Effect: Allow
+      Action:
+        - sns:Publish
+        - sns:Subscribe
+      Resource: arn:aws:sns:us-east-2:045485036215:epub2mobi-mailer 
+
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bin/**
+
+
+functions:
+  purl:
+    handler: bin/purl
+    events:
+      - http:
+          path: purl
+          method: get
+  epub2mobi:
+    handler: bin/epub2mobi
+    timeout: 180
+    events:
+      - s3:
+          bucket: "${self:custom.bucket}"
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: epubs/
+            - suffix: .epub
+          existing: true
+    environment:
+      SNS_MAILER: arn:aws:sns:us-east-2:045485036215:epub2mobi-mailer 
+    layers:
+      - ${cf:epub2kindle-calibre-layer-dev.CalibreLayerExport}
+#      - {Ref: CalibreLambdaLayer}
+  mailer:
+    handler: bin/mailer
+    events:
+      - sns: epub2mobi-mailer
+    environment:
+      SMTP_HOST: your-smtp-host   
+      SMTP_SENDER: robot@sender 
+      SMTP_USER: robot 
+      SMTP_PASS: pepe1234
+      SMTP_PORT: 587 
+
