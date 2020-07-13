@@ -1,0 +1,28 @@
+service: epub2kindle-calibre-layer
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+frameworkVersion: '>=1.28.0 <2.0.0'
+
+provider:
+  name: aws
+  runtime: go1.x
+  region: us-east-2
+
+
+layers:
+  calibre:
+    path: layer
+
+
+resources:
+  Outputs:
+    CalibreLayerExport:
+        Value:
+          Ref: CalibreLambdaLayer
+        Export:
+          Name: CalibreLambdaLayer
