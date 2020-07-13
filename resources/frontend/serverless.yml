@@ -1,0 +1,34 @@
+service: epub2kindle-frontend
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+frameworkVersion: '>=1.28.0 <2.0.0'
+
+plugins:
+  - serverless-finch
+  - serverless-stack-output
+custom:
+  bucket: "epub2kindle-frontend-bucket"
+  client:
+    bucketName: ${self:custom.bucket}
+  output:
+    file: .build/stack.json # toml, yaml, yml, and json format is available
+
+
+provider:
+  name: aws
+  runtime: go1.x
+  environment:
+    UPLOAD_BUCKET: ${self:custom.bucket}
+  region: us-east-2
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bin/**
+

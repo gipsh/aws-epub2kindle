@@ -1,0 +1,75 @@
+<!DOCTYPE html PUBLIC"-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<title>serverless epub2kindle</title></head>
+
+<div>
+kindle mail:
+<input type="text" id="owner">
+</div>
+<input type="file" id="selector" multiple>
+<button onclick="upload()">Upload</button>
+
+<div id="status">No uploads</div>
+
+<script type="text/javascript">
+  // `upload` iterates through all files selected and invokes a helper function called `retrieveNewURL`.
+  function upload() {
+        // Get selected files from the input element.
+        var files = document.querySelector("#selector").files;
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            // Retrieve a URL from our server.
+            retrieveNewURL(file, (file, url, fowner, ff) => {
+                // Upload the file to the server.
+                uploadFile(file, url, fowner, ff);
+            });
+        }
+    }
+
+    // `retrieveNewURL` accepts the name of the current file and invokes the `/presignedUrl` endpoint to
+    // generate a pre-signed URL for use in uploading that file: 
+    function retrieveNewURL(file, cb) {
+	var owner = document.querySelector("#owner").value 
+	var filename  = document.querySelector("#selector").files[0].name 
+ 	var fixfilename = filename.replace(/[|&;$%@"`′<>+,]/g, "");
+        var lambdaUrl = "https://vrm3v7w1z6.execute-api.us-east-2.amazonaws.com/dev/purl"  + "?owner=" + owner + "&file=" + fixfilename
+	fetch(lambdaUrl).then((response) => {
+            response.text().then((url) => {
+                resp = JSON.parse(url)
+                console.log(response)
+                console.log(resp)
+                cb(file, resp.url, owner, 'xxx');
+            });
+        }).catch((e) => {
+            console.error(e);
+        });
+    }
+
+
+    // ``uploadFile` accepts the current filename and the pre-signed URL. It then uses `Fetch API`
+    // to upload this file to S3 at `play.min.io:9000` using the URL:
+    function uploadFile(file, url, owner, filename) {
+        if (document.querySelector('#status').innerText === 'No uploads') {
+            document.querySelector('#status').innerHTML = '';
+        }
+        fetch(url, {
+	    headers: { 
+		'x-amz-meta-owner': owner,
+//		'x-amz-meta-file':  filename 
+	    },
+            method: 'PUT',
+            body: file
+        }).then(() => {
+            // If multiple files are uploaded, append upload status on the next line.
+            document.querySelector('#status').innerHTML += `<br>Uploaded ${file.name}.`;
+        }).catch((e) => {
+	    console.log('hola');
+            console.error(e);
+        });
+    }
+</script>
+
+
